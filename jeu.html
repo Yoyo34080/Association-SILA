@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz de l'Alphabet Arabe</title>
+    
+    <!-- Importation des polices Google Fonts (Nunito pour le français, Cairo pour l'arabe) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Cairo:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- Utilisation de Tailwind CSS pour le style -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icônes Phosphor pour les boutons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0f9ff; /* sky-50 */
+        }
+        .font-arabic {
+            font-family: 'Cairo', sans-serif; /* Police spécifique pour l'arabe */
+        }
+        .option-button, #start-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .option-button:hover, #start-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        .correct-answer {
+            background-color: #22c55e !important; /* green-500 */
+            color: white !important;
+            animation: correct-pulse 0.6s ease;
+        }
+        .wrong-answer {
+            background-color: #ef4444 !important; /* red-500 */
+            color: white !important;
+            animation: wrong-shake 0.5s ease;
+        }
+        @keyframes correct-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes wrong-shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-10px); }
+            80% { transform: translateX(10px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Écran d'accueil -->
+    <div id="welcome-container" class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center">
+        <div class="flex justify-center mb-6">
+            <img src="https://i.imgur.com/7Cyt4D3.png" alt="Logo SILA" class="h-28">
+        </div>
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">مرحبا 💖</h1>
+        <p class="text-gray-600 mb-6">Quel est ton prénom ?</p>
+        <input type="text" id="name-input" placeholder="Écris ton prénom ici" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg mb-6 focus:border-blue-500 focus:ring-blue-500 outline-none">
+        <button id="start-button" class="w-full bg-blue-600 text-white font-bold py-3 px-10 rounded-full text-lg hover:bg-blue-700">
+            Commencer à jouer
+        </button>
+    </div>
+
+    <!-- Conteneur principal du jeu (caché au début) -->
+    <div id="game-container" class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 md:p-8 text-center hidden">
+        
+        <!-- Header: Nom du joueur et Score -->
+        <header class="flex justify-between items-center mb-6">
+            <h1 id="player-name-display" class="text-xl font-bold text-blue-600"></h1>
+            <div class="text-lg font-bold text-white bg-yellow-500 px-4 py-1 rounded-full">
+                Score: <span id="score">0</span>
+            </div>
+        </header>
+
+        <!-- Flashcard: Lettre et son -->
+        <div class="relative bg-blue-500 rounded-xl flex items-center justify-center h-48 md:h-56">
+            <div id="letter-display" class="font-arabic text-white" style="font-size: 120px;"></div>
+            <button id="sound-button" class="absolute bottom-3 right-3 bg-white/30 text-white rounded-full p-2 hover:bg-white/50 transition">
+                <i class="ph-speaker-high ph-xl"></i>
+            </button>
+        </div>
+
+        <!-- Options de réponse -->
+        <div id="options-container" class="grid grid-cols-2 gap-4 my-8"></div>
+
+        <!-- Feedback et bouton Suivant -->
+        <div class="h-20 flex flex-col items-center justify-center">
+             <div id="feedback-message" class="h-8 text-2xl font-bold transition-opacity duration-300"></div>
+             <button id="next-button" class="mt-2 bg-green-500 text-white font-bold py-3 px-10 rounded-full text-lg hover:bg-green-600 transition-transform transform hover:scale-105 hidden">
+                Suivant &rarr;
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Base de données du jeu ---
+        const alphabet = [
+            { letter: 'أ', name: 'Alif' }, { letter: 'ب', name: 'Bā\'' }, { letter: 'ت', name: 'Tā\'' },
+            { letter: 'ث', name: 'Thā\'' }, { letter: 'ج', name: 'Jīm' }, { letter: 'ح', name: 'Hā\'' },
+            { letter: 'خ', name: 'Khā\'' }, { letter: 'د', name: 'Dāl' }, { letter: 'ذ', name: 'Dhāl' },
+            { letter: 'ر', name: 'Rā\'' }, { letter: 'ز', name: 'Zāy' }, { letter: 'س', name: 'Sīn' },
+            { letter: 'ش', name: 'Shīn' }, { letter: 'ص', name: 'Sād' }, { letter: 'ض', name: 'Dād' },
+            { letter: 'ط', name: 'Tā\'' }, { letter: 'ظ', name: 'Zā\'' }, { letter: 'ع', name: 'Ayn' },
+            { letter: 'غ', name: 'Ghayn' }, { letter: 'ف', name: 'Fā\'' }, { letter: 'ق', name: 'Qāf' },
+            { letter: 'ك', name: 'Kāf' }, { letter: 'ل', name: 'Lām' }, { letter: 'م', name: 'Mīm' },
+            { letter: 'ن', name: 'Nūn' }, { letter: 'ه', name: 'Hā\'' }, { letter: 'و', name: 'Wāw' },
+            { letter: 'ي', name: 'Yā\'' }
+        ];
+
+        // --- Éléments du DOM ---
+        const welcomeContainer = document.getElementById('welcome-container');
+        const gameContainer = document.getElementById('game-container');
+        const nameInput = document.getElementById('name-input');
+        const startButton = document.getElementById('start-button');
+        const playerNameDisplay = document.getElementById('player-name-display');
+        
+        const letterDisplay = document.getElementById('letter-display');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const nextButton = document.getElementById('next-button');
+        const soundButton = document.getElementById('sound-button');
+        const scoreDisplay = document.getElementById('score');
+
+        // --- Variables d'état du jeu ---
+        let currentQuestion = null;
+        let score = 0;
+        let answered = false;
+        let shuffledAlphabet = [];
+        let questionIndex = 0;
+
+        // --- Fonctions du jeu ---
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ar-SA';
+                utterance.rate = 0.7;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.log("Synthèse vocale non supportée.");
+            }
+        }
+        
+        function shuffleArray(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function startGame() {
+            score = 0;
+            questionIndex = 0;
+            scoreDisplay.textContent = score;
+            shuffledAlphabet = shuffleArray([...alphabet]);
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            answered = false;
+            feedbackMessage.textContent = '';
+            nextButton.classList.add('hidden');
+            optionsContainer.innerHTML = '';
+            
+            if (questionIndex >= shuffledAlphabet.length) {
+                questionIndex = 0;
+                shuffledAlphabet = shuffleArray([...alphabet]);
+            }
+
+            currentQuestion = shuffledAlphabet[questionIndex];
+            questionIndex++;
+
+            letterDisplay.textContent = currentQuestion.letter;
+            speak(currentQuestion.letter);
+
+            const correctAnswer = currentQuestion.name;
+            const wrongAnswers = shuffleArray(alphabet.filter(item => item.name !== correctAnswer))
+                .slice(0, 3)
+                .map(item => item.name);
+
+            let options = shuffleArray([correctAnswer, ...wrongAnswers]);
+
+            options.forEach(optionName => {
+                const button = document.createElement('button');
+                button.className = 'option-button bg-gray-100 text-gray-800 font-bold py-4 px-2 rounded-lg text-lg';
+                button.textContent = optionName;
+                button.onclick = () => checkAnswer(optionName, button);
+                optionsContainer.appendChild(button);
+            });
+        }
+        
+        function checkAnswer(selectedName, buttonElement) {
+            if (answered) return;
+            answered = true;
+
+            Array.from(optionsContainer.children).forEach(btn => btn.disabled = true);
+
+            if (selectedName === currentQuestion.name) {
+                score++;
+                scoreDisplay.textContent = score;
+                feedbackMessage.textContent = 'Bravo ! 🎉';
+                feedbackMessage.className = 'h-8 text-2xl font-bold text-green-500';
+                buttonElement.classList.add('correct-answer');
+            } else {
+                feedbackMessage.textContent = 'Oups !';
+                feedbackMessage.className = 'h-8 text-2xl font-bold text-red-500';
+                buttonElement.classList.add('wrong-answer');
+                const correctButton = Array.from(optionsContainer.children).find(btn => btn.textContent === currentQuestion.name);
+                if (correctButton) {
+                    correctButton.classList.add('correct-answer');
+                }
+            }
+            nextButton.classList.remove('hidden');
+        }
+
+        // --- Initialisation ---
+        startButton.addEventListener('click', () => {
+            const playerName = nameInput.value.trim();
+            playerNameDisplay.textContent = playerName === '' ? 'Joueur' : playerName;
+            
+            welcomeContainer.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+            
+            startGame();
+        });
+
+        nextButton.addEventListener('click', loadQuestion);
+
+        soundButton.addEventListener('click', () => {
+            if (currentQuestion) {
+                speak(currentQuestion.letter);
+            }
+        });
+    </script>
+</body>
+</html>
