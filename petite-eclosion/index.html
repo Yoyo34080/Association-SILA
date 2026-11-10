@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Petite Éclosion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap">
+<link rel="preload" as="image" href="assets/jardin.webp">
+<style>
+/* Mise en page : une carte de jeu — le jardin illustré en haut, le panneau d'activité ancré dessous et qui le chevauche */
+:root{
+  color-scheme:light;
+  --page:#efe3d5;
+  --cream:#fbf4e9;
+  --paper:#fffdf8;
+  --ink:#4a3329;
+  --ink-soft:#7c6355;
+  --line:#eadccb;
+  --clay:#8a583c;
+  --clay-dark:#6f452e;
+  --leaf:#6fae5f;
+  --leaf-soft:#e2f0d8;
+  --leaf-ink:#3f6a35;
+  --hint-soft:#fbe9d6;
+  --hint-ink:#8a4d22;
+  --rose:#b5677a;
+  --rose-dark:#9b5265;
+  --display:"Fredoka","Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:var(--page);color:var(--ink);font-family:var(--body);font-size:15px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:max(20px,env(safe-area-inset-top,0px));padding-bottom:max(20px,env(safe-area-inset-bottom,0px));
+  background-image:radial-gradient(circle at 20% 0%,#f8ece0 0,transparent 55%),radial-gradient(circle at 90% 100%,#f3dccb 0,transparent 50%);}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,[role=button]:focus-visible{outline:3px solid #f1b84b;outline-offset:2px}
+img{max-width:100%;display:block}
+
+.app{max-width:960px;margin:0 auto;position:relative;border-radius:28px;overflow:hidden;
+  box-shadow:0 30px 60px -30px rgba(90,55,35,.45),0 2px 0 rgba(255,255,255,.6) inset;background:var(--cream)}
+.app:fullscreen{max-width:none;border-radius:0;overflow:auto}
+
+/* ---------- Accueil ---------- */
+.welcome{display:grid;grid-template-columns:1fr 1.25fr;align-items:center;min-height:520px;position:relative;overflow:hidden;
+  background:linear-gradient(170deg,#fdeee4 0%,#f8d3c8 45%,#fbe2cd 100%)}
+.welcome .txt{padding:48px 0 48px 48px;position:relative;z-index:2;display:flex;flex-direction:column;gap:14px}
+.welcome h1{font-family:var(--display);font-weight:700;font-size:clamp(42px,6.4vw,66px);line-height:.95;margin:0;color:#4b362c;letter-spacing:-.01em;text-wrap:balance}
+.welcome h2{font-family:var(--display);font-weight:500;font-size:20px;margin:0;color:#6b5045}
+.welcome p{margin:0;max-width:30ch;line-height:1.5;color:#6d564b;font-size:15px}
+.island{position:relative;padding:40px 28px 40px 20px;display:grid;place-items:center}
+.island .frame{position:relative;width:100%;aspect-ratio:1672/941;border-radius:24px;overflow:hidden;
+  box-shadow:0 26px 40px -22px rgba(110,60,40,.55);animation:float 6s ease-in-out infinite}
+.island .frame img{width:100%;height:100%;object-fit:cover;filter:saturate(.12) sepia(.18) brightness(1.04) contrast(.9);transition:filter 1.4s}
+.island:hover .frame img{filter:saturate(.45) sepia(.1) brightness(1.03) contrast(.95)}
+.island .gseed{position:absolute;left:50%;bottom:6px;width:34%;transform:translateX(-50%);animation:bob 2.8s ease-in-out infinite;
+  filter:drop-shadow(0 8px 14px rgba(160,110,20,.35))}
+.island .petal{position:absolute;width:10px;height:6px;border-radius:50%;background:#f7a9c6;top:-10px;animation:fallp linear infinite}
+@keyframes float{50%{transform:translateY(-8px)}}
+@keyframes bob{50%{transform:translate(-50%,-8px)}}
+@keyframes fallp{0%{transform:translate(0,0) rotate(0);opacity:0}10%{opacity:1}100%{transform:translate(-90px,430px) rotate(400deg);opacity:0}}
+
+.btn-rose{align-self:flex-start;display:inline-flex;align-items:center;gap:12px;background:var(--rose);color:#fff;
+  font-family:var(--display);font-weight:600;font-size:17px;padding:14px 26px;border-radius:999px;
+  box-shadow:0 6px 0 var(--rose-dark),0 14px 24px -10px rgba(120,50,70,.6);transition:transform .15s,box-shadow .15s;margin-top:10px}
+.btn-rose:hover{transform:translateY(-2px)}
+.btn-rose:active{transform:translateY(3px);box-shadow:0 3px 0 var(--rose-dark)}
+.btn-soft{display:inline-flex;align-items:center;gap:8px;background:var(--paper);color:var(--ink);font-family:var(--display);font-weight:600;
+  font-size:16px;padding:13px 22px;border-radius:999px;box-shadow:0 4px 0 var(--line),0 10px 20px -12px rgba(90,55,35,.4)}
+
+/* ---------- Scène de jeu ---------- */
+.stage{position:relative;background:linear-gradient(180deg,#f5e6d6 0%,#f9ecdd 55%,var(--cream) 100%);min-height:520px;display:flex;flex-direction:column}
+.scene-wrap{position:relative;aspect-ratio:1672/941;overflow:hidden;background:#dfe6ea}
+.scene{position:absolute;inset:0;width:100%;height:100%;display:block;transform-origin:0 0;transition:transform .8s cubic-bezier(.3,.8,.3,1)}
+.hud{position:absolute;top:14px;left:14px;background:rgba(255,250,243,.9);backdrop-filter:blur(4px);border-radius:14px;padding:9px 13px 8px;
+  box-shadow:0 6px 18px -10px rgba(90,55,35,.5);z-index:3}
+.track{display:flex;align-items:center;margin-bottom:5px}
+.track i{width:12px;height:12px;border-radius:50%;background:#bfe0b1;border:2px solid #fff;box-shadow:0 0 0 1.5px #7fb26f;display:block;transition:.4s}
+.track b{width:16px;height:3px;background:#a6cf96;display:block}
+.track i.done{background:#ec8fae;box-shadow:0 0 0 1.5px #d46e92;transform:scale(1.15)}
+.track i.cur{box-shadow:0 0 0 1.5px #7fb26f,0 0 0 5px rgba(127,178,111,.25)}
+.hud .pct{font-weight:800;font-size:12.5px;color:var(--ink)}
+.hud .zn{font-size:11.5px;color:var(--ink-soft)}
+.contemplate{position:absolute;top:14px;right:14px;z-index:3;display:flex;align-items:center;gap:7px;background:rgba(255,250,243,.92);
+  border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:700;box-shadow:0 6px 18px -10px rgba(90,55,35,.5)}
+.ctrls{position:absolute;right:12px;bottom:12px;display:flex;gap:8px;z-index:6}
+.ctrls button{width:38px;height:38px;border-radius:50%;background:rgba(120,110,104,.8);display:grid;place-items:center;color:#fff}
+.ctrls svg{width:18px;height:18px}
+.stage.lift .ctrls{display:none}
+
+/* dock sous la scène */
+.dock{position:relative;z-index:4;margin-top:-64px;padding:0 18px 18px;display:flex;justify-content:center;flex:1}
+.stage.contemplating .dock>*:not(.prompt){display:none}
+.prompt{align-self:flex-end;margin-top:84px;background:rgba(255,250,243,.96);border-radius:999px;padding:9px 18px;font-size:13px;font-weight:700;color:var(--ink-soft);
+  box-shadow:0 6px 16px -10px rgba(90,55,35,.5);text-align:center}
+.panel{width:100%;max-width:640px;background:var(--cream);border-radius:22px;padding:16px 16px 14px;
+  box-shadow:0 -10px 30px -18px rgba(90,55,35,.45),0 0 0 1px rgba(234,220,203,.8);display:flex;flex-direction:column;gap:12px;
+  animation:rise .5s cubic-bezier(.3,.8,.3,1)}
+@keyframes rise{from{transform:translateY(30px);opacity:0}}
+.ph{display:flex;align-items:flex-start;gap:12px}
+.ph div{flex:1;min-width:0}
+.ph h3{margin:0;font-family:var(--display);font-weight:600;font-size:19px;color:var(--ink)}
+.ph p{margin:2px 0 0;font-size:13px;color:var(--ink-soft)}
+.count{display:flex;align-items:center;gap:5px;background:var(--leaf-soft);color:var(--leaf-ink);font-weight:800;font-size:13px;
+  padding:5px 11px;border-radius:999px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count svg{width:14px;height:14px}
+
+/* association */
+.match{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px}
+.lc,.rc{min-height:46px;border-radius:11px;position:relative;transition:transform .15s,box-shadow .2s,background .3s}
+.lc{background:var(--paper);box-shadow:0 0 0 1.5px var(--line),0 3px 0 var(--line);font-weight:700;font-size:15px;color:var(--ink);display:grid;place-items:center;padding:6px 10px}
+.lc .emo{font-size:27px;line-height:1}
+.lc:hover:not(.gone){transform:translateY(-1px)}
+.lc.sel{box-shadow:0 0 0 2.5px var(--leaf),0 3px 0 #c9e3bd;background:#f7fcf3}
+.lc.gone{background:transparent;box-shadow:0 0 0 1.5px var(--line) inset;cursor:default}
+.lc.gone>*{visibility:hidden}
+.rc{background:linear-gradient(180deg,var(--clay),var(--clay-dark));color:#fff7ee;font-weight:800;font-size:15px;text-align:left;
+  padding:6px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;box-shadow:0 3px 0 #55331f,inset 0 1px 0 rgba(255,255,255,.18)}
+.rc:hover:not(.ok){transform:translateY(-1px)}
+.rc.ok{box-shadow:0 0 0 2.5px #9fd18c,0 3px 0 #55331f;cursor:default}
+.tag{background:#fff9f1;color:var(--ink);font-size:12.5px;font-weight:800;border-radius:7px;padding:3px 8px;display:flex;align-items:center;gap:4px;
+  animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
+.tag .emo{font-size:17px}
+.rc .spr{position:absolute;right:10px;top:-13px;width:18px;height:18px;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(0)}}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+/* tri */
+.baskets{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.basket{min-height:66px;border-radius:13px;color:#fff7ee;font-family:var(--display);font-weight:600;font-size:16px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;padding:8px;background-color:#87563a;
+  background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.13) 0 4px,transparent 4px 9px),repeating-linear-gradient(-45deg,rgba(255,255,255,.08) 0 4px,transparent 4px 9px);
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.12),0 4px 0 #55331f;transition:transform .15s,box-shadow .2s}
+.basket:hover{transform:translateY(-1px)}
+.basket .n{font-family:var(--body);font-size:11.5px;font-weight:800;background:rgba(0,0,0,.25);border-radius:999px;min-width:22px;padding:1px 7px;font-variant-numeric:tabular-nums}
+.basket.bump{box-shadow:inset 0 0 0 3px #b8e2a3,0 4px 0 #55331f}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:4px 0}
+.chip{background:var(--paper);border-radius:10px;padding:8px 13px;font-weight:800;font-size:14px;box-shadow:0 0 0 1.5px var(--line),0 3px 0 var(--line);transition:transform .15s}
+.chip:hover{transform:translateY(-1px)}
+.chip.sel{box-shadow:0 0 0 2.5px var(--leaf),0 3px 0 #c9e3bd;background:#f7fcf3}
+.chip.out{transform:scale(0);opacity:0;transition:.3s}
+
+.fb{border-radius:12px;padding:10px 14px;font-size:13.5px;font-weight:700;background:var(--leaf-soft);color:var(--leaf-ink);min-height:40px;display:flex;align-items:center}
+.fb.hint{background:var(--hint-soft);color:var(--hint-ink)}
+.fb.idle{background:#f3ebe0;color:var(--ink-soft);font-weight:600}
+
+/* carte de zone / fin */
+.card{align-self:flex-end;background:var(--cream);border-radius:20px;padding:16px 26px 20px;text-align:center;max-width:440px;width:100%;
+  box-shadow:0 14px 34px -16px rgba(90,55,35,.55),0 0 0 1px var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;animation:rise .5s cubic-bezier(.3,.8,.3,1)}
+.card .thumb{height:118px;width:auto;max-width:230px;object-fit:contain;margin:-58px 0 2px;filter:drop-shadow(0 10px 12px rgba(90,55,35,.3));animation:pop .7s cubic-bezier(.3,1.5,.5,1)}
+.card .thumb.crop{width:190px;border-radius:16px;object-fit:cover;object-position:78% 70%;border:4px solid #fff}
+.card .eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+.card h3{margin:0;font-family:var(--display);font-weight:600;font-size:22px}
+.card p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.45}
+.card .btn-rose{align-self:center;margin-top:8px;font-size:15px;padding:11px 22px}
+.card .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.card .row .btn-rose{margin-top:0}
+.card .big{font-family:var(--display);font-weight:600;color:var(--leaf-ink);font-size:15px}
+.dock.withthumb{padding-top:40px}
+
+/* ---------- Animations SVG de la scène ---------- */
+.zc{opacity:0;transition:opacity 1.2s ease}
+.seed{cursor:pointer}
+.seed .bobber{animation:sbob 2.6s ease-in-out infinite}
+@keyframes sbob{50%{transform:translateY(-14px)}}
+.seed .halo{animation:halo 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes halo{50%{transform:scale(1.3);opacity:.5}}
+.sprout{transform-box:fill-box;transform-origin:50% 100%;animation:sprout .6s cubic-bezier(.3,1.7,.5,1)}
+@keyframes sprout{from{transform:scale(0)}}
+.fx{opacity:0;transition:opacity 1s .6s;pointer-events:none}
+.on .fx,.fx.on{opacity:1}
+.bfly .w{transform-box:fill-box;transform-origin:50% 50%;animation:flap .35s ease-in-out infinite alternate}
+@keyframes flap{to{transform:scaleX(.25)}}
+.drift{animation:drift 7s ease-in-out infinite}
+@keyframes drift{25%{transform:translate(36px,-28px)}50%{transform:translate(-12px,-52px)}75%{transform:translate(-40px,-16px)}}
+.spark{animation:twinkle 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes twinkle{0%,100%{transform:scale(.3);opacity:.15}50%{transform:scale(1);opacity:1}}
+.glow{animation:breathe 2.4s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.35}50%{opacity:.85}}
+.fpetal{animation:fall linear infinite}
+@keyframes fall{0%{transform:translate(0,0) rotate(0);opacity:0}10%{opacity:1}100%{transform:translate(-160px,300px) rotate(360deg);opacity:0}}
+.burst{transform-box:fill-box;transform-origin:center;animation:burst 1.2s ease-out forwards}
+@keyframes burst{from{transform:scale(.2);opacity:1}to{transform:scale(2.4);opacity:0}}
+
+@media (max-width:700px){
+  .welcome{grid-template-columns:1fr;min-height:0}
+  .welcome .txt{padding:30px 22px 0}
+  .island{padding:18px 16px 34px}
+  .match{gap:8px}
+  .lc,.rc{font-size:14px;min-height:44px}
+  .rc{padding:6px 10px}
+  .dock{padding:0 10px 12px;margin-top:-28px}
+  .contemplate span{display:none}
+  .hud{top:8px;left:8px;padding:7px 10px 6px}
+  .hud .zn{display:none}
+  .contemplate{top:8px;right:8px}
+  .ctrls{right:8px;bottom:8px}
+  .ctrls button{width:32px;height:32px}
+  .prompt{margin-top:52px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+(()=>{
+/* ================= CONTENU ================= */
+const ZONES=[
+ {name:"Le semis",type:"match",instr:"Associe chaque image au mot qui lui correspond.",img:true,thumb:"fleurs",
+  done:"Les premières fleurs ont éclos !",
+  pairs:[["🧹","un balai","On s'en sert pour nettoyer le sol."],
+         ["🪜","une échelle","On monte dessus pour atteindre le haut."],
+         ["⏳","un sablier","Le sable y coule pour mesurer le temps."],
+         ["🔑","une clé","Elle sert à ouvrir une porte."],
+         ["🪣","un seau","On le remplit d'eau pour jouer ou nettoyer."],
+         ["🧺","un panier","On y met les fruits ou le pique-nique."]]},
+ {name:"La haie colorée",type:"match",instr:"Associe chaque mot à son synonyme.",thumb:null,
+  done:"La haie a poussé et le petit ruisseau chante de nouveau !",
+  pairs:[["content","heureux","Quand tout va bien et qu'on a le sourire."],
+         ["commencer","débuter","Faire le tout premier pas d'une action."],
+         ["la peur","la crainte","Ce qu'on ressent face à un danger."],
+         ["joli","beau","Agréable à regarder."],
+         ["terminer","finir","Arriver au bout de quelque chose."],
+         ["un cadeau","un présent","On l'offre pour un anniversaire."]]},
+ {name:"L'étang endormi",type:"sort",instr:"Range chaque mot dans le bon panier.",thumb:"etang",
+  done:"L'eau est revenue ! La cascade et la fontaine se sont réveillées.",
+  cats:[["meteo","La météo"],["emo","Les émotions"],["metier","Les métiers"]],
+  items:[["l'orage","meteo","On entend le tonnerre gronder."],
+         ["le brouillard","meteo","On ne voit plus rien à quelques mètres."],
+         ["une averse","meteo","Une pluie forte et soudaine."],
+         ["la fierté","emo","Ce qu'on ressent après une belle réussite."],
+         ["la colère","emo","Ce qu'on ressent quand on est très fâché."],
+         ["la tristesse","emo","Ce qu'on ressent quand on a envie de pleurer."],
+         ["un boulanger","metier","Il prépare le pain chaque matin."],
+         ["un plombier","metier","Il répare les fuites d'eau."],
+         ["une infirmière","metier","Elle soigne les patients à l'hôpital."]]},
+ {name:"Le bosquet",type:"match",instr:"Associe chaque mot à son contraire.",thumb:"arbre",
+  done:"Le grand arbre a fleuri et les papillons sont arrivés !",
+  pairs:[["rapide","lent","Pense à la tortue."],
+         ["ancien","moderne","Qui est de notre époque, tout récent."],
+         ["généreux","avare","Quelqu'un qui garde tout son argent pour lui."],
+         ["accepter","refuser","C'est dire non."],
+         ["épais","mince","Un livre de dix pages est…"],
+         ["gagner","perdre","Ce qui arrive quand l'autre équipe marque plus de points."]]},
+ {name:"Le cœur magique",type:"sort",instr:"Classe les mots pour réveiller le château du jardin.",thumb:"chateau",
+  done:"",
+  cats:[["obj","Les objets"],["emo","Les émotions"],["meteo","La météo"],["metier","Les métiers"]],
+  items:[["une bougie","obj","On l'allume pour avoir un peu de lumière."],
+         ["un tiroir","obj","Il se trouve dans un meuble, on y range des affaires."],
+         ["un arrosoir","obj","On s'en sert pour donner de l'eau aux plantes."],
+         ["la joie","emo","Ce qu'on ressent quand on est très content."],
+         ["la honte","emo","Ce qu'on ressent quand on rougit après une bêtise."],
+         ["l'angoisse","emo","Une très grande inquiétude."],
+         ["la grêle","meteo","Des petites billes de glace qui tombent du ciel."],
+         ["un éclair","meteo","Attention, ce n'est pas le gâteau ! Il zèbre le ciel pendant l'orage."],
+         ["la bruine","meteo","Une pluie très fine."],
+         ["un pompier","metier","Il éteint les incendies."],
+         ["une vétérinaire","metier","Elle soigne les animaux."],
+         ["un menuisier","metier","Il travaille le bois."]]}
+];
+const TOTAL=ZONES.reduce((s,z)=>s+(z.pairs||z.items).length,0);
+const GOOD=["Très bien !","Magnifique !","Le jardin sourit !","Une nouvelle feuille pousse !","C'est ça !","Bravo !"];
+
+/* Géométrie dans l'illustration (1672 × 941).
+   area = ellipse qui reprend ses couleurs ; seed = où se pose la graine ; focus = point visé par le zoom */
+const W=1672,H=941;
+const GEO=[
+ {area:[420,610,390,205],seed:[440,610],focus:[420,600]},   // massif de fleurs (bas gauche)
+ {area:[1270,620,400,195],seed:[1250,640],focus:[1270,610]}, // haie et ruisseau (bas droite)
+ {area:[330,255,330,210],seed:[330,330],focus:[330,260]},    // étang, cascade, fontaine (haut gauche)
+ {area:[1385,235,310,230],seed:[1300,330],focus:[1380,250]}, // grand arbre rose (haut droite)
+ {area:[850,270,300,300],seed:[850,560],focus:[850,330]}     // château (centre)
+];
+const IMG={jardin:"assets/jardin.webp",graine:"assets/graine.webp"};
+
+/* ================= OUTILS ================= */
+const $=(s,r=document)=>r.querySelector(s);
+const app=$("#app");
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const leafIcon=`<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13C3 6 8 2.5 14 2.5 14 9 10 13.5 3 13Z" fill="#6fae5f"/><path d="M3 13 10 6" stroke="#e2f0d8" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+const sproutIcon=`<svg class="spr" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 19V9" stroke="#5f9a4f" stroke-width="2" stroke-linecap="round"/><ellipse cx="6" cy="8" rx="5" ry="2.8" transform="rotate(-30 6 8)" fill="#86c46f"/><ellipse cx="14" cy="6.5" rx="5" ry="2.8" transform="rotate(30 14 6.5)" fill="#9bd47f"/></svg>`;
+
+/* ================= AUDIO ================= */
+let actx=null,soundOn=true;
+function tone(f,d=.15,t=0,type="sine",v=.12){if(!soundOn)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.type=type;o.frequency.value=f;const s=actx.currentTime+t;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(v,s+.02);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g).connect(actx.destination);o.start(s);o.stop(s+d+.05)}catch(e){}}
+const sndGood=()=>{tone(660,.15);tone(880,.22,.09)};
+const sndBad=()=>{tone(220,.22,0,"triangle",.08)};
+const sndZone=()=>[523,659,784,1047].forEach((f,i)=>tone(f,.3,i*.11));
+
+/* ================= DÉCOR ================= */
+const star=(x,y,r,d,c="#fff6c9")=>`<path class="spark" style="animation-delay:${d}s" d="M${x},${y-r} L${x+r*.28},${y-r*.28} L${x+r},${y} L${x+r*.28},${y+r*.28} L${x},${y+r} L${x-r*.28},${y+r*.28} L${x-r},${y} L${x-r*.28},${y-r*.28}Z" fill="${c}"/>`;
+const fly=(x,y,c,d)=>`<g class="drift" style="animation-delay:${d}s"><g class="bfly" transform="translate(${x},${y}) scale(2)"><path class="w" style="transform-origin:100% 50%" d="M0,0 C-10,-12 -16,-2 -10,4 C-14,10 -4,12 0,2Z" fill="${c}"/><path class="w" style="transform-origin:0% 50%" d="M0,0 C10,-12 16,-2 10,4 C14,10 4,12 0,2Z" fill="${c}"/><path d="M0,-4 V6" stroke="#5a3a2a" stroke-width="1.6" stroke-linecap="round"/></g></g>`;
+/* petites animations qui s'allument quand une zone est restaurée */
+const FX=[
+ ()=>fly(300,470,"#c7a7ee",0)+fly(560,520,"#f5d35e",-2.5)+[[230,560],[470,600],[650,650],[350,700]].map(([x,y],i)=>star(x,y,12,i*.4)).join(""),
+ ()=>[[1400,640],[1460,600],[1330,690],[1210,600]].map(([x,y],i)=>star(x,y,13,i*.35,"#ffffff")).join("")+fly(1100,560,"#f49ab8",-1.2),
+ ()=>[[300,250],[420,230],[520,240],[260,380],[460,180],[560,215]].map(([x,y],i)=>star(x,y,13,i*.3,"#ffffff")).join("")+fly(180,200,"#f5d35e",-3),
+ ()=>Array.from({length:10},(_,i)=>`<ellipse class="fpetal" style="animation-duration:${6+i%4*1.5}s;animation-delay:${-i*1.1}s" cx="${1220+i*42}" cy="${70+(i%3)*50}" rx="8" ry="5" fill="#f7a9c6"/>`).join("")+fly(1250,180,"#c7a7ee",0)+fly(1530,140,"#f5d35e",-2.3)+fly(1580,300,"#f49ab8",-4.6),
+ ()=>`<ellipse class="glow" cx="852" cy="400" rx="80" ry="70" fill="url(#doorglow)"/>`+[[700,140],[1000,150],[860,40],[640,330],[1060,330],[760,250],[940,250]].map(([x,y],i)=>star(x,y,15,i*.25)).join("")
+];
+
+function buildScene(){
+  const masks=GEO.map((g,i)=>{const[x,y,rx,ry]=g.area;return`<mask id="m${i}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#fff" filter="url(#soft)"/></mask>`}).join("");
+  let g=`<defs>
+   <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="38"/></filter>
+   <filter id="fade" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values=".1"/><feComponentTransfer><feFuncR type="linear" slope=".82" intercept=".15"/><feFuncG type="linear" slope=".8" intercept=".13"/><feFuncB type="linear" slope=".76" intercept=".11"/></feComponentTransfer></filter>
+   <radialGradient id="seedg"><stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#ffe7a0"/><stop offset=".7" stop-color="#ffd36b" stop-opacity=".5"/><stop offset="1" stop-color="#ffd36b" stop-opacity="0"/></radialGradient>
+   <radialGradient id="doorglow"><stop offset="0" stop-color="#ffe9a8"/><stop offset="1" stop-color="#ffcf6b" stop-opacity="0"/></radialGradient>
+   ${masks}</defs>`;
+  g+=`<image href="${IMG.jardin}" width="${W}" height="${H}" filter="url(#fade)"/>`;
+  g+=GEO.map((_,i)=>`<g class="zc" id="zc${i}"><image href="${IMG.jardin}" width="${W}" height="${H}" mask="url(#m${i})"/></g>`).join("");
+  g+=`<g class="zc" id="zcAll"><image href="${IMG.jardin}" width="${W}" height="${H}"/></g>`;
+  g+=GEO.map((_,i)=>`<g id="z${i}"><g class="spr-l"></g><g class="fx">${FX[i]()}</g></g>`).join("");
+  g+=`<g id="burst"></g>`;
+  g+=`<g id="seed" class="seed" role="button" tabindex="0" aria-label="Toucher la graine pour réveiller la zone"><g class="bobber"><circle class="halo" r="95" fill="url(#seedg)"/><image href="${IMG.graine}" x="-86" y="-96" width="172" height="128"/></g></g>`;
+  return `<svg class="scene" id="scene" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Le jardin flottant et son château">${g}</svg>`;
+}
+function addSprout(i){
+  const[x,y,rx,ry]=GEO[i].area;const t=Math.random()*Math.PI*2,r=.2+Math.random()*.6;
+  const sx=x+Math.cos(t)*rx*r,sy=y+Math.sin(t)*ry*r;
+  $(`#z${i} .spr-l`).insertAdjacentHTML("beforeend",`<g transform="translate(${sx.toFixed(0)},${sy.toFixed(0)}) scale(2.4)"><g class="sprout"><path d="M0,0 V-9" stroke="#5f9a4f" stroke-width="2" stroke-linecap="round"/><ellipse cx="-4" cy="-10" rx="4.6" ry="2.5" transform="rotate(-30 -4 -10)" fill="#86c46f"/><ellipse cx="4" cy="-11" rx="4.6" ry="2.5" transform="rotate(30 4 -11)" fill="#9bd47f"/></g></g>`);
+}
+function burst(i){
+  const[x,y]=GEO[i].focus;
+  $("#burst").innerHTML=`<circle class="burst" cx="${x}" cy="${y}" r="120" fill="url(#seedg)"/>`+Array.from({length:8},(_,k)=>{const a=k*Math.PI/4;return star(Math.round(x+Math.cos(a)*170),Math.round(y+Math.sin(a)*110),16,k*.1)}).join("");
+  setTimeout(()=>{const b=$("#burst");if(b)b.innerHTML=""},2400);
+}
+/* zoom doux vers la zone en cours pendant l'activité */
+function focusZone(i){
+  const sc=$("#scene");if(i==null){sc.style.transform="";return}
+  const s=1.5,[x,y]=GEO[i].focus,px=x/W,py=y/H,cl=(v)=>Math.min(0,Math.max(1-s,v));
+  sc.style.transform=`translate(${(cl(.5-s*px)*100).toFixed(2)}%,${(cl(.38-s*py)*100).toFixed(2)}%) scale(${s})`;
+}
+
+/* ================= ACCUEIL ================= */
+function showWelcome(){
+  const petals=Array.from({length:8},(_,i)=>`<span class="petal" style="left:${12+i*11}%;animation-duration:${7+i%4*2}s;animation-delay:${-i*1.3}s"></span>`).join("");
+  app.innerHTML=`<section class="welcome"><div class="txt"><h1>Petite Éclosion</h1><h2>Le jardin des mots</h2>
+   <p>Ce jardin a oublié ses couleurs. Chaque mot que tu apprends lui rend un peu de vie.</p>
+   <button class="btn-rose" id="go">Commencer à cultiver <span aria-hidden="true">→</span></button></div>
+   <div class="island" aria-hidden="true"><div class="frame"><img src="${IMG.jardin}" alt=""></div><img class="gseed" src="${IMG.graine}" alt="">${petals}</div></section>`;
+  $("#go").onclick=()=>{tone(523,.12);startGame()};
+}
+
+/* ================= JEU ================= */
+let S;
+function startGame(){
+  S={zone:0,done:0,sel:null,matched:0};
+  app.innerHTML=`<section class="stage" id="stage">
+   <div class="scene-wrap">${buildScene()}
+    <div class="hud" aria-live="polite"><div class="track" id="track"></div><div class="pct" id="pct"></div><div class="zn" id="zn"></div></div>
+    <button class="contemplate" id="look"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span>Contempler le jardin</span></button>
+    <div class="ctrls"><button id="snd" aria-label="Couper le son"></button><button id="fs" aria-label="Plein écran"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>
+   </div><div class="dock" id="dock"></div></section>`;
+  $("#look").onclick=()=>{const st=$("#stage"),on=st.classList.toggle("contemplating");$("#look span").textContent=on?"Revenir au jeu":"Contempler le jardin";focusZone(on||!st.classList.contains("lift")?null:S.zone)};
+  $("#fs").onclick=()=>{try{const p=document.fullscreenElement?document.exitFullscreen():$("#app").requestFullscreen();p&&p.catch&&p.catch(()=>{})}catch(e){}};
+  const sndIco=()=>{const b=$("#snd");b.setAttribute("aria-label",soundOn?"Couper le son":"Remettre le son");b.innerHTML=soundOn?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>`};
+  sndIco();$("#snd").onclick=()=>{soundOn=!soundOn;sndIco()};
+  const sd=$("#seed");sd.onclick=openActivity;sd.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openActivity()}};
+  toSeed();
+}
+function pct(){const z=ZONES[S.zone],n=(z.pairs||z.items).length;return Math.min(100,Math.round(S.done*20+(S.done>S.zone?0:S.matched/n*20)))}
+function hud(){
+  $("#track").innerHTML=ZONES.map((_,i)=>`<i class="${i<S.done?"done":i===S.zone?"cur":""}"></i>`).join("<b></b>");
+  $("#pct").textContent=`Jardin restauré : ${pct()} %`;
+  $("#zn").textContent=S.done>=5?"Toutes les zones sont restaurées":`Zone ${S.zone+1} sur 5 · ${ZONES[S.zone].name}`;
+}
+function toSeed(){
+  S.matched=0;S.sel=null;hud();
+  const[x,y]=GEO[S.zone].seed,sd=$("#seed");sd.setAttribute("transform",`translate(${x},${y})`);sd.style.display="";
+  $("#stage").classList.remove("lift");focusZone(null);
+  const dk=$("#dock");dk.classList.remove("withthumb");
+  dk.innerHTML=`<div class="prompt">Touche la graine dorée pour réveiller cette zone</div>`;
+}
+function head(z){const n=(z.pairs||z.items).length;return`<div class="ph"><div><h3>${z.name}</h3><p>${z.instr}</p></div><div class="count">${leafIcon}<span id="cnt">0/${n}</span></div></div>`}
+function fb(msg,kind=""){const f=$("#fb");f.className="fb "+kind;f.textContent=msg}
+function openActivity(){
+  tone(784,.18);$("#seed").style.display="none";$("#stage").classList.add("lift");
+  if(!$("#stage").classList.contains("contemplating"))focusZone(S.zone);
+  $(`#zc${S.zone}`).style.opacity=.2;
+  const z=ZONES[S.zone];let body="";
+  if(z.type==="match"){
+    let order;do{order=shuffle(z.pairs.map((_,i)=>i))}while(order.every((v,i)=>v===i));
+    body=`<div class="match">`+z.pairs.map((p,i)=>`<button class="lc" data-l="${i}">${z.img?`<span class="emo" role="img" aria-label="${p[1]}">${p[0]}</span>`:`<span>${p[0]}</span>`}</button><button class="rc" data-r="${order[i]}"><span>${z.pairs[order[i]][1]}</span></button>`).join("")+`</div>`;
+  }else{
+    body=`<div class="baskets">`+z.cats.map(([id,l])=>`<button class="basket" data-c="${id}">${l}<span class="n">0</span></button>`).join("")+`</div><div class="chips">`+shuffle(z.items.map((_,i)=>i)).map(i=>`<button class="chip" data-w="${i}">${z.items[i][0]}</button>`).join("")+`</div>`;
+  }
+  $("#dock").innerHTML=`<div class="panel">${head(z)}${body}<div class="fb idle" id="fb" aria-live="polite">${z.type==="match"?"Choisis une carte à gauche, puis sa réponse à droite.":"Choisis un mot, puis touche son panier."}</div></div>`;
+  const P=$(".panel");
+  P.addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;
+    if(b.classList.contains("lc")||b.classList.contains("chip")){if(b.classList.contains("gone")||b.classList.contains("out"))return;P.querySelectorAll(".sel").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");S.sel=b;tone(600,.06,0,"sine",.06);return}
+    if(b.classList.contains("rc")){if(b.classList.contains("ok"))return;
+      if(!S.sel){fb("Choisis d'abord une carte à gauche.","idle");return}
+      const l=+S.sel.dataset.l,r=+b.dataset.r;
+      if(l===r){const p=z.pairs[l];S.sel.classList.remove("sel");S.sel.classList.add("gone");b.classList.add("ok");
+        b.insertAdjacentHTML("beforeend",`<span class="tag">${z.img?`<span class="emo">${p[0]}</span>`:p[0]}</span>${sproutIcon}`);good()}
+      else bad([S.sel,b],z.pairs[l][2]);
+      return}
+    if(b.classList.contains("basket")){
+      if(!S.sel){fb("Choisis d'abord un mot.","idle");return}
+      const it=z.items[+S.sel.dataset.w];
+      if(it[1]===b.dataset.c){const n=b.querySelector(".n");n.textContent=+n.textContent+1;b.classList.add("bump");setTimeout(()=>b.classList.remove("bump"),500);
+        const c=S.sel;c.classList.remove("sel");c.classList.add("out");setTimeout(()=>c.remove(),300);good()}
+      else bad([S.sel,b],it[2]);
+    }
+  });
+}
+function good(){
+  S.sel=null;S.matched++;sndGood();addSprout(S.zone);
+  const z=ZONES[S.zone],n=(z.pairs||z.items).length;$("#cnt").textContent=`${S.matched}/${n}`;
+  $(`#zc${S.zone}`).style.opacity=(.2+.55*S.matched/n).toFixed(2); // les couleurs reviennent petit à petit
+  fb(GOOD[(Math.random()*GOOD.length)|0]);hud();
+  if(S.matched===n)setTimeout(zoneDone,750);
+}
+function bad(els,hint){
+  sndBad();els.forEach(e=>{e.classList.remove("shake");void e.offsetWidth;e.classList.add("shake")});
+  if(S.sel)S.sel.classList.remove("sel");S.sel=null;fb("Presque… réessaie. "+hint,"hint");
+}
+function thumbHTML(z){return z.thumb?`<img class="thumb" src="assets/${z.thumb}.webp" alt="">`:`<img class="thumb crop" src="${IMG.jardin}" alt="">`}
+function zoneDone(){
+  const i=S.zone;sndZone();$(`#zc${i}`).style.opacity=1;$(`#z${i}`).classList.add("on");burst(i);S.done++;
+  $("#stage").classList.remove("lift");focusZone(null);hud();
+  const dk=$("#dock");
+  if(S.done>=5){dk.innerHTML="";setTimeout(()=>{$("#zcAll").style.opacity=1;sndZone()},700);setTimeout(endScreen,2200);return}
+  const z=ZONES[i];dk.classList.add("withthumb");
+  dk.innerHTML=`<div class="card">${thumbHTML(z)}<span class="eyebrow">Zone restaurée</span><h3>${z.name}</h3><p>${z.done}</p><button class="btn-rose" id="next">Continuer à cultiver</button></div>`;
+  $("#next").onclick=()=>{S.zone++;toSeed()};$("#next").focus({preventScroll:true});
+}
+function endScreen(){
+  const dk=$("#dock");dk.classList.add("withthumb");
+  dk.innerHTML=`<div class="card"><img class="thumb" src="assets/chateau.webp" alt=""><span class="eyebrow">Jardin restauré : 100 %</span><h3>Ton jardin a fleuri !</h3><p>Chaque mot était une graine. Regarde tout ce que tu as fait pousser.</p><p class="big">Tu as cultivé ${TOTAL} mots en 5 zones.</p><div class="row"><button class="btn-soft" id="admire">Contempler mon jardin</button><button class="btn-rose" id="again">Recommencer</button></div></div>`;
+  $("#admire").onclick=()=>$("#look").click();
+  $("#again").onclick=()=>startGame();
+}
+
+showWelcome();
+})();
+</script>
+</body>
+</html>
