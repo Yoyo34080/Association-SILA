@@ -74,9 +74,11 @@ img{max-width:100%;display:block}
   font-size:16px;padding:13px 22px;border-radius:999px;box-shadow:0 4px 0 var(--line),0 10px 20px -12px rgba(90,55,35,.4)}
 
 /* ---------- Scène de jeu ---------- */
-.stage{position:relative;background:linear-gradient(180deg,#f5e6d6 0%,#f9ecdd 55%,var(--cream) 100%);min-height:520px;display:flex;flex-direction:column}
-.scene-wrap{position:relative;aspect-ratio:1672/941;overflow:hidden;background:#dfe6ea}
-.scene{position:absolute;inset:0;width:100%;height:100%;display:block;transform-origin:0 0;transition:transform .8s cubic-bezier(.3,.8,.3,1)}
+.stage{position:relative;background:linear-gradient(180deg,#f5e6d6 0%,#f9ecdd 55%,var(--cream) 100%);display:flex;flex-direction:column}
+/* hauteur adaptée à l'écran : 16/9 sur PC et tablette, plus haute sur téléphone, plafonnée sur les écrans bas (paysage) */
+.scene-wrap{position:relative;height:min(56.3vw,540px,64vh);height:min(56.3vw,540px,64svh);overflow:hidden;background:#dfe6ea}
+.app:fullscreen .scene-wrap{height:min(56.3vw,70vh)}
+.scene{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hud{position:absolute;top:14px;left:14px;background:rgba(255,250,243,.9);backdrop-filter:blur(4px);border-radius:14px;padding:9px 13px 8px;
   box-shadow:0 6px 18px -10px rgba(90,55,35,.5);z-index:3}
 .track{display:flex;align-items:center;margin-bottom:5px}
@@ -189,6 +191,7 @@ img{max-width:100%;display:block}
 @keyframes burst{from{transform:scale(.2);opacity:1}to{transform:scale(2.4);opacity:0}}
 
 @media (max-width:700px){
+  .scene-wrap{height:min(78vw,58vh);height:min(78vw,58svh)}
   .welcome{grid-template-columns:1fr;min-height:0}
   .welcome .txt{padding:30px 22px 0}
   .island{padding:18px 16px 34px}
@@ -336,12 +339,31 @@ function burst(i){
   $("#burst").innerHTML=`<circle class="burst" cx="${x}" cy="${y}" r="120" fill="url(#seedg)"/>`+Array.from({length:8},(_,k)=>{const a=k*Math.PI/4;return star(Math.round(x+Math.cos(a)*170),Math.round(y+Math.sin(a)*110),16,k*.1)}).join("");
   setTimeout(()=>{const b=$("#burst");if(b)b.innerHTML=""},2400);
 }
-/* zoom doux vers la zone en cours pendant l'activité */
-function focusZone(i){
-  const sc=$("#scene");if(i==null){sc.style.transform="";return}
-  const s=1.5,[x,y]=GEO[i].focus,px=x/W,py=y/H,cl=(v)=>Math.min(0,Math.max(1-s,v));
-  sc.style.transform=`translate(${(cl(.5-s*px)*100).toFixed(2)}%,${(cl(.38-s*py)*100).toFixed(2)}%) scale(${s})`;
+/* Cadrage : la vue (viewBox) s'adapte à la forme de l'écran.
+   Au repos tout le jardin est visible (ou recadré autour de la graine sur un écran étroit) ;
+   pendant une activité, zoom doux vers la zone en cours. */
+let view={zone:null},vb=null,vbAnim=0;
+function targetBox(){
+  const r=$(".scene-wrap").getBoundingClientRect();if(!r.width||!r.height)return[0,0,W,H];
+  const a=r.width/r.height,z=view.zone!=null?(r.width<560?1.35:1.5):1;
+  let bw,bh;if(a<W/H){bh=H/z;bw=bh*a}else{bw=W/z;bh=bw/a}
+  let x=W/2-bw/2,y=H/2-bh/2;
+  if(view.zone!=null){const[fx,fy]=GEO[view.zone].focus;x=fx-bw/2;y=fy-bh*.42}
+  else if(S&&S.done<5&&!$("#stage").classList.contains("contemplating")){const[sx,sy]=GEO[S.zone].seed,m=Math.min(160,bw*.25);x=Math.min(Math.max(x,sx+m-bw),sx-m);y=Math.min(Math.max(y,sy+120-bh),sy-120)}
+  x=Math.min(Math.max(0,x),W-bw);y=Math.min(Math.max(0,y),H-bh);
+  return[x,y,bw,bh];
 }
+function applyBox(b){vb=b;const sc=$("#scene");if(sc)sc.setAttribute("viewBox",b.map(v=>v.toFixed(1)).join(" "))}
+function frame(animate=true){
+  const to=targetBox();cancelAnimationFrame(vbAnim);
+  const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(!animate||!vb||reduce){applyBox(to);return}
+  const from=vb.slice(),t0=performance.now(),D=800,ease=t=>1-Math.pow(1-t,3);
+  const step=now=>{const t=Math.min(1,(now-t0)/D),e=ease(t);applyBox(from.map((v,k)=>v+(to[k]-v)*e));if(t<1)vbAnim=requestAnimationFrame(step)};
+  vbAnim=requestAnimationFrame(step);
+}
+function focusZone(i){view.zone=i;frame()}
+window.addEventListener("resize",()=>{if($("#scene"))frame(false)});
 
 /* ================= ACCUEIL ================= */
 function showWelcome(){
@@ -356,7 +378,7 @@ function showWelcome(){
 /* ================= JEU ================= */
 let S;
 function startGame(){
-  S={zone:0,done:0,sel:null,matched:0};
+  S={zone:0,done:0,sel:null,matched:0};vb=null;view={zone:null};
   app.innerHTML=`<section class="stage" id="stage">
    <div class="scene-wrap">${buildScene()}
     <div class="hud" aria-live="polite"><div class="track" id="track"></div><div class="pct" id="pct"></div><div class="zn" id="zn"></div></div>
