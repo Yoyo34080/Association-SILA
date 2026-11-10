@@ -57,6 +57,9 @@ img{max-width:100%;display:block}
 .island:hover .frame img{filter:saturate(.45) sepia(.1) brightness(1.03) contrast(.95)}
 .island .gseed{position:absolute;left:50%;bottom:6px;width:34%;transform:translateX(-50%);animation:bob 2.8s ease-in-out infinite;
   filter:drop-shadow(0 8px 14px rgba(160,110,20,.35))}
+.island .bf{position:absolute;width:13%;z-index:2;filter:drop-shadow(0 6px 8px rgba(120,60,40,.25));animation:wdrift 8s ease-in-out infinite}
+.island .bf img{animation:flap .3s ease-in-out infinite alternate}
+@keyframes wdrift{25%{transform:translate(18px,-16px) rotate(8deg)}50%{transform:translate(-8px,-30px) rotate(-6deg)}75%{transform:translate(-20px,-8px) rotate(4deg)}}
 .island .petal{position:absolute;width:10px;height:6px;border-radius:50%;background:#f7a9c6;top:-10px;animation:fallp linear infinite}
 @keyframes float{50%{transform:translateY(-8px)}}
 @keyframes bob{50%{transform:translate(-50%,-8px)}}
@@ -172,8 +175,8 @@ img{max-width:100%;display:block}
 @keyframes sprout{from{transform:scale(0)}}
 .fx{opacity:0;transition:opacity 1s .6s;pointer-events:none}
 .on .fx,.fx.on{opacity:1}
-.bfly .w{transform-box:fill-box;transform-origin:50% 50%;animation:flap .35s ease-in-out infinite alternate}
-@keyframes flap{to{transform:scaleX(.25)}}
+.flap{transform-box:fill-box;transform-origin:50% 50%;animation:flap .28s ease-in-out infinite alternate}
+@keyframes flap{to{transform:scaleX(.3)}}
 .drift{animation:drift 7s ease-in-out infinite}
 @keyframes drift{25%{transform:translate(36px,-28px)}50%{transform:translate(-12px,-52px)}75%{transform:translate(-40px,-16px)}}
 .spark{animation:twinkle 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
@@ -296,14 +299,15 @@ const sndZone=()=>[523,659,784,1047].forEach((f,i)=>tone(f,.3,i*.11));
 
 /* ================= DÉCOR ================= */
 const star=(x,y,r,d,c="#fff6c9")=>`<path class="spark" style="animation-delay:${d}s" d="M${x},${y-r} L${x+r*.28},${y-r*.28} L${x+r},${y} L${x+r*.28},${y+r*.28} L${x},${y+r} L${x-r*.28},${y+r*.28} L${x-r},${y} L${x-r*.28},${y-r*.28}Z" fill="${c}"/>`;
-const fly=(x,y,c,d)=>`<g class="drift" style="animation-delay:${d}s"><g class="bfly" transform="translate(${x},${y}) scale(2)"><path class="w" style="transform-origin:100% 50%" d="M0,0 C-10,-12 -16,-2 -10,4 C-14,10 -4,12 0,2Z" fill="${c}"/><path class="w" style="transform-origin:0% 50%" d="M0,0 C10,-12 16,-2 10,4 C14,10 4,12 0,2Z" fill="${c}"/><path d="M0,-4 V6" stroke="#5a3a2a" stroke-width="1.6" stroke-linecap="round"/></g></g>`;
+/* papillons illustrés : bleu, rose, monarque, lilas, feuille, galaxie */
+const fly=(x,y,n,d,w=78)=>`<g class="drift" style="animation-delay:${d}s"><g transform="translate(${x},${y}) rotate(${((x*7)%30)-15})"><image class="flap" style="animation-delay:${d/7}s" href="assets/papillon-${n}.webp" x="${-w/2}" y="${-w*.47}" width="${w}" height="${w*.94}"/></g></g>`;
 /* petites animations qui s'allument quand une zone est restaurée */
 const FX=[
- ()=>fly(300,470,"#c7a7ee",0)+fly(560,520,"#f5d35e",-2.5)+[[230,560],[470,600],[650,650],[350,700]].map(([x,y],i)=>star(x,y,12,i*.4)).join(""),
- ()=>[[1400,640],[1460,600],[1330,690],[1210,600]].map(([x,y],i)=>star(x,y,13,i*.35,"#ffffff")).join("")+fly(1100,560,"#f49ab8",-1.2),
- ()=>[[300,250],[420,230],[520,240],[260,380],[460,180],[560,215]].map(([x,y],i)=>star(x,y,13,i*.3,"#ffffff")).join("")+fly(180,200,"#f5d35e",-3),
- ()=>Array.from({length:10},(_,i)=>`<ellipse class="fpetal" style="animation-duration:${6+i%4*1.5}s;animation-delay:${-i*1.1}s" cx="${1220+i*42}" cy="${70+(i%3)*50}" rx="8" ry="5" fill="#f7a9c6"/>`).join("")+fly(1250,180,"#c7a7ee",0)+fly(1530,140,"#f5d35e",-2.3)+fly(1580,300,"#f49ab8",-4.6),
- ()=>`<ellipse class="glow" cx="852" cy="400" rx="80" ry="70" fill="url(#doorglow)"/>`+[[700,140],[1000,150],[860,40],[640,330],[1060,330],[760,250],[940,250]].map(([x,y],i)=>star(x,y,15,i*.25)).join("")
+ ()=>fly(300,470,"lilas",0)+fly(560,520,"monarque",-2.5)+[[230,560],[470,600],[650,650],[350,700]].map(([x,y],i)=>star(x,y,12,i*.4)).join(""),
+ ()=>[[1400,640],[1460,600],[1330,690],[1210,600]].map(([x,y],i)=>star(x,y,13,i*.35,"#ffffff")).join("")+fly(1100,560,"feuille",-1.2)+fly(1500,520,"rose",-3.4,66),
+ ()=>[[300,250],[420,230],[520,240],[260,380],[460,180],[560,215]].map(([x,y],i)=>star(x,y,13,i*.3,"#ffffff")).join("")+fly(180,200,"bleu",-3)+fly(600,330,"monarque",-1.4,64),
+ ()=>Array.from({length:10},(_,i)=>`<ellipse class="fpetal" style="animation-duration:${6+i%4*1.5}s;animation-delay:${-i*1.1}s" cx="${1220+i*42}" cy="${70+(i%3)*50}" rx="8" ry="5" fill="#f7a9c6"/>`).join("")+fly(1250,180,"lilas",0)+fly(1530,140,"rose",-2.3)+fly(1580,300,"bleu",-4.6),
+ ()=>`<ellipse class="glow" cx="852" cy="400" rx="80" ry="70" fill="url(#doorglow)"/>`+[[700,140],[1000,150],[860,40],[640,330],[1060,330],[760,250],[940,250]].map(([x,y],i)=>star(x,y,15,i*.25)).join("")+fly(1080,120,"galaxie",-2,86)+fly(620,180,"feuille",-5,70)
 ];
 
 function buildScene(){
@@ -345,7 +349,7 @@ function showWelcome(){
   app.innerHTML=`<section class="welcome"><div class="txt"><h1>Petite Éclosion</h1><h2>Le jardin des mots</h2>
    <p>Ce jardin a oublié ses couleurs. Chaque mot que tu apprends lui rend un peu de vie.</p>
    <button class="btn-rose" id="go">Commencer à cultiver <span aria-hidden="true">→</span></button></div>
-   <div class="island" aria-hidden="true"><div class="frame"><img src="${IMG.jardin}" alt=""></div><img class="gseed" src="${IMG.graine}" alt="">${petals}</div></section>`;
+   <div class="island" aria-hidden="true"><div class="frame"><img src="${IMG.jardin}" alt=""></div><img class="gseed" src="${IMG.graine}" alt="">${petals}<span class="bf" style="left:6%;top:16%"><img src="assets/papillon-bleu.webp" alt=""></span><span class="bf" style="right:4%;top:46%;animation-delay:-3s"><img src="assets/papillon-rose.webp" alt=""></span></div></section>`;
   $("#go").onclick=()=>{tone(523,.12);startGame()};
 }
 
